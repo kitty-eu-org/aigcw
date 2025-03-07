@@ -1,15 +1,17 @@
 pub mod commit_types;
+mod git_utils;
+mod llm;
 
+use crate::commit_types::load_config;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Select};
 use std::process::Command;
-use crate::commit_types::load_config;
 
 #[derive(Parser)]
 #[command(
     name = "gcw",
-    disable_help_flag = true,
-    disable_version_flag = true,
+    disable_help_flag = false,
+    disable_version_flag = false,
     allow_external_subcommands = true
 )]
 struct Cli {

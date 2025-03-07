@@ -1,5 +1,5 @@
-use std::path::Path;
 use derive_new::new;
+use std::path::Path;
 #[derive(serde::Deserialize, new)]
 pub struct Config {
     pub emoji: EmojiConfig,
@@ -29,62 +29,62 @@ pub fn load_config() -> anyhow::Result<Config> {
     if commit_config_path.exists() {
         let content = std::fs::read_to_string(".commitconfig.toml")?;
         Ok(toml::from_str(&content)?)
-    }else {
+    } else {
         let types = vec![
             CommitTypeConfig {
                 name: "feat".into(),
                 emoji: "✨".into(),
-                desc: "新增功能".into()
+                desc: "新增功能".into(),
             },
             CommitTypeConfig {
                 name: "fix".into(),
                 emoji: "🐛".into(),
-                desc: "Bug修复".into()
+                desc: "Bug修复".into(),
             },
             CommitTypeConfig {
                 name: "docs".into(),
                 emoji: "📚".into(),
-                desc: "文档更新".into()
+                desc: "文档更新".into(),
             },
             CommitTypeConfig {
                 name: "style".into(),
                 emoji: "🎨".into(),
-                desc: "代码样式调整".into()
+                desc: "代码样式调整".into(),
             },
             CommitTypeConfig {
                 name: "refactor".into(),
                 emoji: "♻️".into(),
-                desc: "代码重构".into()
+                desc: "代码重构".into(),
             },
             CommitTypeConfig {
                 name: "perf".into(),
                 emoji: "⚡️".into(),
-                desc: "性能优化".into()
+                desc: "性能优化".into(),
             },
             CommitTypeConfig {
                 name: "test".into(),
                 emoji: "✅".into(),
-                desc: "测试相关".into()
+                desc: "测试相关".into(),
             },
             CommitTypeConfig {
                 name: "build".into(),
                 emoji: "📦️".into(),
-                desc: "构建系统变更".into()
+                desc: "构建系统变更".into(),
             },
             CommitTypeConfig {
                 name: "ci".into(),
                 emoji: "👷".into(),
-                desc: "CI配置变更".into()
+                desc: "CI配置变更".into(),
             },
             CommitTypeConfig {
                 name: "chore".into(),
                 emoji: "🔧".into(),
-                desc: "其他杂项".into()
+                desc: "其他杂项".into(),
             },
             CommitTypeConfig {
                 name: "revert".into(),
                 emoji: "⏪️".into(),
-                desc: "提交回滚".into()
+                desc: "提交回滚".into(),
             },
         ];
         Ok(Config::new(EmojiConfig::new(true), types))
