@@ -1,6 +1,7 @@
 pub mod commit_types;
 mod git_utils;
 mod llm;
+mod customer_llm_backend;
 
 use crate::commit_types::load_config;
 use clap::Parser;

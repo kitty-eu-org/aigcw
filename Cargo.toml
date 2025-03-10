@@ -10,5 +10,6 @@ anyhow = "1.0.75"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.7.0"
 derive-new = "0.7.0"
-rllm = "1.1.7"
-tokio = { version="1.43.0", features = ["test"]}
+rllm = { version="1.1.7" , features = ["ollama"]}
+tokio = { version="1.43.0", features = ["full"]}
+reqwest = "0.12.12"

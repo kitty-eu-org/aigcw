@@ -547,6 +547,7 @@ dependencies = [
  "clap",
  "derive-new",
  "dialoguer",
+ "reqwest",
  "rllm",
  "serde",
  "tokio",
