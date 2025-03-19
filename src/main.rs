@@ -1,9 +1,14 @@
+mod app_config;
 pub mod commit_types;
+mod customer_llm_backend;
 mod git_utils;
 mod llm;
-mod customer_llm_backend;
 
+use crate::app_config::load_app_config;
 use crate::commit_types::load_config;
+use crate::git_utils::get_diff_content;
+use crate::llm::generate_msg;
+use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Select};
 use std::io::IsTerminal;
 use std::process::Command;
@@ -14,118 +19,136 @@ fn is_tty() -> bool {
     std::io::stdin().is_terminal() && std::io::stdout().is_terminal()
 }
 
-/// Determine if we should intercept this commit command
-/// Only intercept if:
-/// 1. First arg is "commit"
-/// 2. -m or --message flag is present
-/// 3. We're in a TTY environment
-fn should_intercept_commit(args: &[String]) -> bool {
-    if args.is_empty() || args[0] != "commit" {
-        return false;
-    }
-
-    if !is_tty() {
-        return false;
-    }
-
-    args.iter().any(|arg|
-        arg == "-m" ||
-        arg == "--message" ||
-        (arg.starts_with("-m") && arg.len() > 2) ||
-        arg.starts_with("--message=")
-    )
+#[derive(Parser, Debug)]
+#[command(name = "gcw")]
+#[command(about = "AI-powered Git Commit Wrapper", long_about = None)]
+enum Cli {
+    #[command(external_subcommand)]
+    Git(Vec<String>),
 }
 
-/// Extract the message value from commit args
-/// Handles both -m "msg" and -m"msg" formats
-fn extract_message(args: &[String]) -> Option<(usize, String)> {
-    for (i, arg) in args.iter().enumerate() {
-        if arg == "-m" || arg == "--message" {
-            // Next arg is the message
-            if i + 1 < args.len() {
-                return Some((i, args[i + 1].clone()));
+#[derive(Debug)]
+enum GitCommand {
+    Commit {
+        all: bool,
+        message: Option<String>,
+        patch: bool,
+        amend: bool,
+        extra_args: Vec<String>,
+    },
+    Other(Vec<String>),
+}
+
+impl GitCommand {
+    fn parse(args: Vec<String>) -> Self {
+        if args.is_empty() || args[0] != "commit" {
+            return GitCommand::Other(args);
+        }
+
+        let mut all = false;
+        let mut patch = false;
+        let mut amend = false;
+        let mut message = None;
+        let mut extra_args = Vec::new();
+        let mut skip_next = false;
+
+        for (i, arg) in args.iter().enumerate().skip(1) {
+            if skip_next {
+                skip_next = false;
+                continue;
             }
-        } else if arg.starts_with("-m") && arg.len() > 2 {
-            // Combined format: -m"message"
-            return Some((i, arg[2..].to_string()));
-        } else if arg.starts_with("--message=") {
-            // Long format: --message=value
-            return Some((i, arg[10..].to_string()));
-        }
-    }
-    None
-}
 
-/// Extract all flags except the message flag
-fn extract_other_flags(args: &[String], message_idx: usize) -> Vec<String> {
-    let mut flags = Vec::new();
-    let mut skip_next = false;
-
-    for (i, arg) in args.iter().enumerate() {
-        if i == 0 {
-            // Skip "commit" command
-            continue;
-        }
-
-        if skip_next {
-            skip_next = false;
-            continue;
-        }
-
-        if i == message_idx {
-            // Skip -m or --message
-            if arg == "-m" || arg == "--message" {
-                skip_next = true;
+            match arg.as_str() {
+                "--all" | "-a" => all = true,
+                "--patch" | "-p" => patch = true,
+                "--amend" => amend = true,
+                "-m" | "--message" => {
+                    if i + 1 < args.len() {
+                        message = Some(args[i + 1].clone());
+                        skip_next = true;
+                    }
+                }
+                _ if arg.starts_with("-m") => {
+                    message = Some(arg[2..].to_string());
+                }
+                _ if arg.starts_with("--message=") => {
+                    message = Some(arg[10..].to_string());
+                }
+                _ => extra_args.push(arg.clone()),
             }
-            continue;
         }
 
-        flags.push(arg.clone());
+        GitCommand::Commit {
+            all,
+            message,
+            patch,
+            amend,
+            extra_args,
+        }
     }
-
-    flags
 }
 
-/// Handle interactive commit with type selection
-fn handle_interactive_commit(args: Vec<String>) -> anyhow::Result<()> {
-    let (message_idx, message) = match extract_message(&args) {
-        Some(result) => result,
-        None => {
-            // No -m flag found, shouldn't happen due to should_intercept_commit
-            // but pass through anyway
-            return execute_git(&args);
-        }
-    };
-
-    let other_flags = extract_other_flags(&args, message_idx);
-
-    // Load config and show type selection
-    let config = load_config()?;
-    let selects: Vec<String> = config.types.iter().map(|x| x.show_string()).collect();
-    let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select commit type")
-        .items(&selects)
-        .interact()?;
-
-    let prefixed_msg = format!("{} {}", selects[selection], message);
-
-    // Build final git command
-    let mut git_args = vec!["commit".to_string()];
-    git_args.extend(other_flags);
-    git_args.push("-m".to_string());
-    git_args.push(prefixed_msg);
-
-    execute_git(&git_args)
-}
-
-
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    let cli = GitCommand::parse(args);
 
-    if should_intercept_commit(&args) {
-        handle_interactive_commit(args)
-    } else {
-        execute_git(&args)
+    match cli {
+        GitCommand::Commit {
+            all,
+            message,
+            patch,
+            amend,
+            extra_args,
+        } => {
+            let mut base_args = Vec::new();
+            if all {
+                base_args.push("--all".to_string());
+            }
+            if patch {
+                base_args.push("--patch".to_string());
+            }
+            if amend {
+                base_args.push("--amend".to_string());
+            }
+
+            if let Some(msg) = message {
+                let config = load_config()?;
+                let selects: Vec<String> = config.types.iter().map(|x| x.show_string()).collect();
+                let selection = Select::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Select commit type")
+                    .items(&selects)
+                    .interact()?;
+                let msg = if msg.is_empty() {
+                    let git_diff_content = get_diff_content()?;
+                    if git_diff_content.is_empty() {
+                        println!("No changes to commit.");
+                        return Ok(());
+                    }
+                    let app_config = load_app_config()?;
+                    generate_msg(&selects[selection], &git_diff_content, &app_config.llm_config).await?
+                } else {
+                    msg
+                };
+
+
+                let prefixed_msg = format!("{} {} ", selects[selection], msg);
+
+                let mut args = vec!["commit".to_string()];
+                args.extend(base_args);
+                args.push("-m".to_string());
+                args.push(prefixed_msg);
+                args.extend(extra_args);
+
+                execute_git(&args)
+            } else {
+                let mut args = vec!["commit".to_string()];
+                args.extend(base_args);
+                args.extend(extra_args);
+                execute_git(&args)
+            }
+        }
+        GitCommand::Other(args) => execute_git(&args),
     }
 }
 

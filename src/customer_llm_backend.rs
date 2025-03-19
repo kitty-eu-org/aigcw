@@ -1,12 +1,10 @@
 use reqwest::Client;
-use reqwest::header::{HeaderName, HeaderValue};
 use rllm::chat::{ChatMessage, ChatProvider, ChatResponse, ChatRole, Tool};
-use rllm::{async_trait, LLMProvider, ToolCall};
 use rllm::completion::{CompletionProvider, CompletionResponse};
 use rllm::embedding::EmbeddingProvider;
 use rllm::error::LLMError;
+use rllm::{async_trait, LLMProvider, ToolCall};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 pub struct AIGCWLLM {
     pub url: String,
@@ -35,7 +33,6 @@ struct AIGCWLLMChatMessage<'a> {
     role: &'a str,
     content: &'a str,
 }
-
 
 #[derive(Deserialize, Debug, Default)]
 pub struct AIGCWLLMChatResponse {
@@ -100,15 +97,16 @@ impl AIGCWLLM {
             top_p: None,
             top_k: None,
             client: builder.build().expect("Failed to build reqwest Client"),
-
         }
     }
 }
 
-
 #[async_trait]
 impl ChatProvider for AIGCWLLM {
-    async fn chat(&self, messages: &[rllm::chat::ChatMessage]) -> Result<Box<dyn ChatResponse>, LLMError> {
+    async fn chat(
+        &self,
+        messages: &[rllm::chat::ChatMessage],
+    ) -> Result<Box<dyn ChatResponse>, LLMError> {
         let mut messages: Vec<AIGCWLLMChatMessage> = messages
             .iter()
             .map(|m| AIGCWLLMChatMessage {
@@ -166,7 +164,10 @@ impl ChatProvider for AIGCWLLM {
 
 #[async_trait]
 impl CompletionProvider for AIGCWLLM {
-    async fn complete(&self, _req: &rllm::completion::CompletionRequest) -> Result<CompletionResponse, LLMError> {
+    async fn complete(
+        &self,
+        _req: &rllm::completion::CompletionRequest,
+    ) -> Result<CompletionResponse, LLMError> {
         Ok(CompletionResponse {
             text: "DeepSeek completion not implemented.".into(),
         })

@@ -13,9 +13,9 @@ pub struct EmojiConfig {
 
 #[derive(serde::Deserialize, Clone, new)]
 pub struct CommitTypeConfig {
-    name: String,  // 类型名称
-    emoji: String, // 对应 emoji
-    desc: String,  // 类型描述
+    pub name: String,  // 类型名称
+    pub emoji: String, // 对应 emoji
+    pub desc: String,  // 类型描述
 }
 
 impl CommitTypeConfig {

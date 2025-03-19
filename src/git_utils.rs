@@ -1,7 +1,7 @@
 use anyhow::Context;
 use std::process::Command;
 
-fn get_diff_content() -> anyhow::Result<String> {
+pub fn get_diff_content() -> anyhow::Result<String> {
     let diff_output = Command::new("git")
         .args(["diff", "--staged"])
         .output()

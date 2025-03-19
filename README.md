@@ -17,8 +17,24 @@
 
 ## Installation
 
+### Quick Install (Linux/macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kitty-eu-org/aigcw/main/scripts/install.sh | bash
+```
+
+### From Cargo
+
 ```bash
 cargo install aigcw
+```
+
+### From Source
+
+```bash
+git clone https://github.com/kitty-eu-org/aigcw.git
+cd aigcw
+cargo install --path .
 ```
 
 ## Usage
