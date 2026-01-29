@@ -148,3 +148,28 @@ Non-TTY environments (piped input, CI/CD, scripts) correctly bypass the interact
 - ✓ Script automation: Works in shell scripts without TTY
 - ✓ CI/CD environments: Will not hang waiting for interactive input
 - ✓ Combined with other commands: `gcw commit -am "msg"` works in non-TTY
+
+## Edge Cases
+
+**Status:** TESTED ✓
+
+Edge case scenarios tested to ensure robustness:
+
+- [✓] **`gcw commit` without -m opens editor**
+  - Command: `echo "" | GIT_EDITOR=true ./target/release/gcw commit`
+  - Result: Passed through to git, attempted to open editor
+  - Output: "Aborting commit due to empty commit message" (expected with GIT_EDITOR=true)
+  - Behavior: Correctly delegates to git when no message is provided
+
+- [✓] **`gcw commit --amend -m "msg"` works**
+  - Setup: Created test commit with `gcw commit -m "test commit to amend"`
+  - Command: `echo "" | ./target/release/gcw commit --amend -m "amended message"`
+  - Result: Successfully amended the commit
+  - Verification: `git log -1 --pretty=%s` showed "amended message"
+  - Behavior: Amend works correctly in non-TTY (no interactive menu)
+
+- [✓] **Extra flags (--no-verify) preserved**
+  - Command: `echo "" | ./target/release/gcw commit -m "test" --no-verify`
+  - Result: Successfully created commit with --no-verify flag
+  - Output: `[feature/native-git-passthrough ee9a86b] test`
+  - Behavior: All additional git flags are preserved and passed through correctly
