@@ -71,7 +71,7 @@ fn get_config_dir() -> Result<PathBuf> {
 
     #[cfg(not(target_os = "macos"))]
     {
-        let proj_dirs = directories::ProjectDirs::from(app_name)
+        let proj_dirs = directories::ProjectDirs::from("", "", app_name)
             .context("Failed to get project directories")?;
         Ok(proj_dirs.config_dir().to_path_buf())
     }
