@@ -132,7 +132,7 @@ async fn main() -> anyhow::Result<()> {
                 };
 
 
-                let prefixed_msg = format!("{} {} ", selects[selection], msg);
+                let prefixed_msg = format!("{} {}", selects[selection], msg);
 
                 let mut args = vec!["commit".to_string()];
                 args.extend(base_args);
