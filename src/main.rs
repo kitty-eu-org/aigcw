@@ -15,6 +15,28 @@ fn is_tty() -> bool {
     std::io::stdin().is_terminal() && std::io::stdout().is_terminal()
 }
 
+/// Determine if we should intercept this commit command
+/// Only intercept if:
+/// 1. First arg is "commit"
+/// 2. -m or --message flag is present
+/// 3. We're in a TTY environment
+fn should_intercept_commit(args: &[String]) -> bool {
+    if args.is_empty() || args[0] != "commit" {
+        return false;
+    }
+
+    if !is_tty() {
+        return false;
+    }
+
+    args.iter().any(|arg|
+        arg == "-m" ||
+        arg == "--message" ||
+        (arg.starts_with("-m") && arg.len() > 2) ||
+        arg.starts_with("--message=")
+    )
+}
+
 #[derive(Parser)]
 #[command(
     name = "gcw",
