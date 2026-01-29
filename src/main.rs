@@ -87,6 +87,38 @@ fn extract_other_flags(args: &[String], message_idx: usize) -> Vec<String> {
     flags
 }
 
+/// Handle interactive commit with type selection
+fn handle_interactive_commit(args: Vec<String>) -> anyhow::Result<()> {
+    let (message_idx, message) = match extract_message(&args) {
+        Some(result) => result,
+        None => {
+            // No -m flag found, shouldn't happen due to should_intercept_commit
+            // but pass through anyway
+            return execute_git(&args);
+        }
+    };
+
+    let other_flags = extract_other_flags(&args, message_idx);
+
+    // Load config and show type selection
+    let config = load_config()?;
+    let selects: Vec<String> = config.types.iter().map(|x| x.show_string()).collect();
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select commit type")
+        .items(&selects)
+        .interact()?;
+
+    let prefixed_msg = format!("{} {}", selects[selection], message);
+
+    // Build final git command
+    let mut git_args = vec!["commit".to_string()];
+    git_args.extend(other_flags);
+    git_args.push("-m".to_string());
+    git_args.push(prefixed_msg);
+
+    execute_git(&git_args)
+}
+
 #[derive(Parser)]
 #[command(
     name = "gcw",
