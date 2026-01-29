@@ -4,7 +4,6 @@ mod llm;
 mod customer_llm_backend;
 
 use crate::commit_types::load_config;
-use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Select};
 use std::io::IsTerminal;
 use std::process::Command;
@@ -119,88 +118,14 @@ fn handle_interactive_commit(args: Vec<String>) -> anyhow::Result<()> {
     execute_git(&git_args)
 }
 
-#[derive(Parser)]
-#[command(
-    name = "gcw",
-    disable_help_flag = false,
-    disable_version_flag = false,
-    allow_external_subcommands = true
-)]
-struct Cli {
-    #[command(subcommand)]
-    command: GitCommand,
-}
-
-#[derive(clap::Subcommand)]
-enum GitCommand {
-    #[command(name = "commit")]
-    Commit {
-        #[arg(short = 'a', long)]
-        all: bool,
-
-        #[arg(short = 'm', long)]
-        message: Option<String>,
-
-        #[arg(short = 'p', long)]
-        patch: bool,
-
-        #[arg(long = "amend")]
-        amend: bool,
-
-        #[arg(last = true)]
-        extra_args: Vec<String>,
-    },
-    #[command(external_subcommand)]
-    Other(Vec<String>),
-}
 
 fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
+    let args: Vec<String> = std::env::args().skip(1).collect();
 
-    match cli.command {
-        GitCommand::Commit {
-            all,
-            message,
-            patch,
-            amend,
-            extra_args,
-        } => {
-            let mut base_args = Vec::new();
-            if all {
-                base_args.push("--all".to_string());
-            }
-            if patch {
-                base_args.push("--patch".to_string());
-            }
-            if amend {
-                base_args.push("--amend".to_string());
-            }
-
-            if let Some(msg) = message {
-                let config = load_config()?;
-                let selects: Vec<String> = config.types.iter().map(|x| x.show_string()).collect();
-                let selection = Select::with_theme(&ColorfulTheme::default())
-                    .with_prompt("Select commit type")
-                    .items(&selects)
-                    .interact()?;
-
-                let prefixed_msg = format!("{} {}", selects[selection], msg);
-
-                let mut args = vec!["commit".to_string()];
-                args.extend(base_args);
-                args.push("-m".to_string());
-                args.push(prefixed_msg);
-                args.extend(extra_args);
-
-                execute_git(&args)
-            } else {
-                let mut args = vec!["commit".to_string()];
-                args.extend(base_args);
-                args.extend(extra_args);
-                execute_git(&args)
-            }
-        }
-        GitCommand::Other(args) => execute_git(&args),
+    if should_intercept_commit(&args) {
+        handle_interactive_commit(args)
+    } else {
+        execute_git(&args)
     }
 }
 
