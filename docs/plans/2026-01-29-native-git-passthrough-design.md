@@ -5,16 +5,18 @@
 
 ## Problem Statement
 
-The current `gcw` git wrapper has two issues that prevent it from behaving like native git:
+The current `gcw` git wrapper has three issues that prevent it from behaving like native git:
 
 1. **Parameter passing requires `--` separator** - Commands like `gcw status -s` or `gcw commit -m "message"` require `gcw -- status -s` or `gcw -- commit -- -m "message"`
 2. **Non-TTY environment failures** - In non-interactive environments (Claude Code, CI/CD), `dialoguer` throws "not a terminal" error, breaking automation workflows
+3. **Help text doesn't show git commands** - `gcw --help` shows clap-generated wrapper help instead of native git help
 
 ## Goals
 
 1. Make `gcw` behave exactly like native git for all commands except interactive `commit -m`
 2. Automatically detect non-TTY environments and fall back to native git behavior
 3. Maintain current interactive commit type selection when in TTY environment
+4. Forward `--help` and all other flags directly to native git
 
 ## Design
 
@@ -114,7 +116,9 @@ fn handle_interactive_commit(args: Vec<String>) -> anyhow::Result<()> {
 2. **`git commit --amend -m "msg"`** → Intercept only in TTY
 3. **`git commit -am "msg"`** → Parse combined flags correctly
 4. **`git commit -m "msg" --no-verify`** → Preserve all extra flags
-5. **Unknown flags** → Always passthrough (forward compatibility)
+5. **`git --help`** → Direct passthrough to show native git help
+6. **`git commit --help`** → Direct passthrough to show native git commit help
+7. **Unknown flags** → Always passthrough (forward compatibility)
 
 ### Benefits
 
@@ -137,5 +141,5 @@ No user migration needed - this is a pure enhancement. All existing workflows co
 - [ ] `gcw commit -am "message"` handles combined flags
 - [ ] `gcw commit --amend -m "message"` works correctly
 - [ ] `gcw commit` without `-m` opens editor normally
-- [ ] `gcw --help` shows wrapper help
-- [ ] `gcw commit --help` shows git commit help
+- [ ] `gcw --help` shows native git help (not wrapper help)
+- [ ] `gcw commit --help` shows native git commit help
