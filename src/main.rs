@@ -6,7 +6,14 @@ mod customer_llm_backend;
 use crate::commit_types::load_config;
 use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Select};
+use std::io::IsTerminal;
 use std::process::Command;
+
+/// Check if running in an interactive terminal with both stdin and stdout connected to a TTY.
+/// Used to determine whether to show interactive commit type selection.
+fn is_tty() -> bool {
+    std::io::stdin().is_terminal() && std::io::stdout().is_terminal()
+}
 
 #[derive(Parser)]
 #[command(
