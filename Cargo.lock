@@ -2557,9 +2557,9 @@ dependencies = [
 
 [[package]]
 name = "rllm"
-version = "1.1.9"
+version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0312b82124eef543ed04d396dffb7798ee6cdcc9151dd10ea1fe0839438e6f3d"
+checksum = "cac625da708a7d0fbfcc52f6554ec41e663bdbc2276a36276802858110b471f2"
 dependencies = [
  "llm",
  "reqwest",

@@ -1,10 +1,7 @@
 use crate::app_config::{LLMConfig, LLMProvider};
 use crate::customer_llm_backend::AIGCWLLM;
 use rllm::builder::{LLMBackend, LLMBuilder};
-use rllm::chat::{ChatMessage, ChatRole};
-use rllm::chat::{ChatProvider, MessageType};
-use std::str::FromStr;
-use crate::commit_types::CommitTypeConfig;
+use rllm::chat::{ChatMessage, ChatRole, MessageType};
 
 impl From<&LLMProvider> for LLMBackend {
     fn from(provider: &LLMProvider) -> Self {
@@ -44,7 +41,6 @@ pub async fn generate_msg(
             .backend(LLMBackend::from(&llm_config.provider)) // or LLMBackend::Anthropic, LLMBackend::Ollama, LLMBackend::DeepSeek, LLMBackend::XAI, LLMBackend::Phind ...
             .api_key(llm_config.api_key.clone().unwrap())
             .model(llm_config.model.clone().unwrap()) // or model("claude-3-5-sonnet-20240620") or model("grok-2-latest") or model("deepseek-chat") or model("llama3.1") or model("Phind-70B") ...
-            .stream(false)
             .build()
             .expect("Failed to build LLM")
     };

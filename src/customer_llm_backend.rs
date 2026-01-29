@@ -3,6 +3,9 @@ use rllm::chat::{ChatMessage, ChatProvider, ChatResponse, ChatRole, Tool};
 use rllm::completion::{CompletionProvider, CompletionResponse};
 use rllm::embedding::EmbeddingProvider;
 use rllm::error::LLMError;
+use rllm::models::ModelsProvider;
+use rllm::stt::SpeechToTextProvider;
+use rllm::tts::TextToSpeechProvider;
 use rllm::{async_trait, LLMProvider, ToolCall};
 use serde::{Deserialize, Serialize};
 
@@ -179,6 +182,21 @@ impl EmbeddingProvider for AIGCWLLM {
     async fn embed(&self, _text: Vec<String>) -> Result<Vec<Vec<f32>>, LLMError> {
         Err(LLMError::ProviderError(
             "Embedding not supported".to_string(),
+        ))
+    }
+}
+
+#[async_trait]
+impl ModelsProvider for AIGCWLLM {}
+
+#[async_trait]
+impl TextToSpeechProvider for AIGCWLLM {}
+
+#[async_trait]
+impl SpeechToTextProvider for AIGCWLLM {
+    async fn transcribe(&self, _audio: Vec<u8>) -> Result<String, LLMError> {
+        Err(LLMError::ProviderError(
+            "Speech to text not supported".to_string(),
         ))
     }
 }
