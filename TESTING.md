@@ -64,3 +64,50 @@ The manual routing implementation eliminates the need for users to add `--` befo
 - Intercepts `commit` commands for AI enhancement
 - Passes through all other commands seamlessly
 - Maintains the full git CLI experience
+
+## Interactive Commit (TTY)
+
+**Status:** NOT TESTED (requires real TTY)
+
+These tests require a real TTY environment and cannot be tested in Claude Code or non-interactive shells.
+
+### Expected Behavior
+
+When running `./target/release/gcw commit -m "my message"` in a real terminal:
+
+1. **Type Selection Menu**: Should display an interactive menu with commit types:
+   - feat (new feature)
+   - fix (bug fix)
+   - docs (documentation)
+   - style (formatting)
+   - refactor (code restructuring)
+   - test (adding tests)
+   - chore (maintenance)
+
+2. **Navigation**: Arrow keys (↑/↓) should allow selecting different commit types
+
+3. **Selection**: Enter key should confirm the selection
+
+4. **Message Prefix**: The commit message should be automatically prefixed with the selected type
+   - Example: Selecting "feat" → commit message becomes "feat: my message"
+
+### Manual Test Checklist
+
+To test manually in a real terminal:
+
+- [ ] `gcw commit -m "msg"` shows type selection menu
+- [ ] Arrow keys navigate through commit types
+- [ ] Selected type is highlighted/indicated
+- [ ] Enter key confirms selection
+- [ ] Commit message is correctly prefixed with chosen type
+- [ ] Commit is created successfully with prefixed message
+
+### Test Command
+
+```bash
+# In a real terminal (not in Claude Code)
+cd /Users/sube/pd/aigcw/.worktrees/native-git-passthrough
+./target/release/gcw commit -m "test interactive commit"
+```
+
+**Note:** The interactive handler uses `dialoguer` crate which requires a real TTY. Non-TTY environments will not trigger the interactive menu.
