@@ -8,20 +8,13 @@
 
 ## Features ✨
 
-- 🤖 Generate [Conventional Commits](https://www.conventionalcommits.org/) via LLMs
-- 🦀 Rust-native performance with <1ms overhead
-- 🔌 Zero-config Git hook integration
-- 🌐 Multi-LLM support: OpenAI/Claude/Ollama/Azure
-- ⚡ Smart diff filtering with regex rules
-- 📝 Interactive message editing
+- 🤖 AI-generated commit messages from staged diff via LLM
+- 🎨 Interactive commit type selector with emoji (feat, fix, docs, ...)
+- 🔢 Optional issue number embedding — `feat(#123): ✨ message`
+- 🌐 Multi-LLM support: OpenAI / Anthropic / Ollama / DeepSeek / XAI / Phind / Google / Groq / Custom
+- 🦀 Rust-native, minimal overhead
 
 ## Installation
-
-### Quick Install (Linux/macOS)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/kitty-eu-org/aigcw/main/scripts/install.sh | bash
-```
 
 ### From Cargo
 
@@ -39,40 +32,63 @@ cargo install --path .
 
 ## Usage
 
-```bash
-# Initialize git hook (run once)
-aigcw install-hook
+`gcw` is a drop-in wrapper around `git`. Use it in place of `git`:
 
-# Commit with AI (requires API key)
+```bash
+# Stage changes and commit interactively
 git add .
-git commit  # Auto-generates: feat(parser): add diff filtering logic
+gcw commit
+
+# Interactive flow:
+#  1. Select commit type  →  feat / fix / docs / ...
+#  2. Enter issue number  →  123  (or press Enter to skip)
+#  3. Enter message       →  or leave blank to generate via LLM
+#
+# Result: feat(#123): ✨ add new feature
+#    or:  feat: ✨ add new feature  (if issue skipped)
+
+# Pass a message directly (skips LLM generation)
+gcw commit -m "initial setup"
+
+# All other git commands pass through unchanged
+gcw push
+gcw pull
+gcw status
 ```
 
 ## Configuration
 
-Create `~/.aigcw/config.toml`:
+On first run, `gcw` creates a config file at `~/.config/aigcw/config.toml`.
+
+Example config:
 
 ```toml
-[core]
-model = "gpt-4-turbo"  # gpt-3.5-turbo/claude-3/ollama/azure
-lang = "en"            # en|zh|ja|es
+config_version = 1
 
-[openai]
-api_key = "${ENV_OPENAI_KEY}"  # Env var substitution
-
-[template]
-style = "conventional"  # conventional|angular|semantic
-max_diff_lines = 200     # Truncate large diffs
+[llm_config]
+provider = "OpenAI"   # OpenAI | Anthropic | Ollama | DeepSeek | XAI | Phind | Google | Groq | CUSTOM
+enable = true
+api_key = "sk-..."
+model = "gpt-4o"
+# url = "https://custom-endpoint/v1"  # required for CUSTOM provider
 ```
 
-## Supported Models
+You can also customise commit types by creating `.commitconfig.toml` in your project root:
 
-| Provider  | Example Models   | Required Env Vars        |
-| --------- | ---------------- | ------------------------ |
-| OpenAI    | GPT-4/GPT-3.5    | `OPENAI_API_KEY`         |
-| Anthropic | Claude 3         | `ANTHROPIC_API_KEY`      |
-| Ollama    | CodeLlama/Llama2 | `OLLAMA_HOST` (optional) |
-| Azure     | GPT series       | `AZURE_OPENAI_ENDPOINT`  |
+```toml
+[emoji]
+enable = true
+
+[[types]]
+name = "feat"
+emoji = "✨"
+desc = "A new feature"
+
+[[types]]
+name = "fix"
+emoji = "🐛"
+desc = "A bug fix"
+```
 
 ## Development
 
