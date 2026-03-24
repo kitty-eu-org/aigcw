@@ -9,7 +9,7 @@ use crate::commit_types::load_config;
 use crate::git_utils::get_diff_content;
 use crate::llm::generate_msg;
 use clap::Parser;
-use dialoguer::{theme::ColorfulTheme, Select};
+use dialoguer::{theme::ColorfulTheme, Input, Select};
 use std::io::IsTerminal;
 use std::process::Command;
 
@@ -119,6 +119,10 @@ async fn main() -> anyhow::Result<()> {
                     .with_prompt("Select commit type")
                     .items(&selects)
                     .interact()?;
+                let issue_number: String = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt("Issue number (optional, press Enter to skip)")
+                    .allow_empty(true)
+                    .interact_text()?;
                 let msg = if msg.is_empty() {
                     let git_diff_content = get_diff_content()?;
                     if git_diff_content.is_empty() {
@@ -132,7 +136,13 @@ async fn main() -> anyhow::Result<()> {
                 };
 
 
-                let prefixed_msg = format!("{} {}", selects[selection], msg);
+                let commit_type = &config.types[selection];
+                let prefix = if issue_number.is_empty() {
+                    format!("{}: {}", commit_type.name, commit_type.emoji)
+                } else {
+                    format!("{}(#{}): {}", commit_type.name, issue_number, commit_type.emoji)
+                };
+                let prefixed_msg = format!("{} {}", prefix, msg);
 
                 let mut args = vec!["commit".to_string()];
                 args.extend(base_args);
